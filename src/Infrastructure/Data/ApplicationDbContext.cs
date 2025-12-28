@@ -19,6 +19,11 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+        builder.Entity<ApplicationUser>()
+        .HasOne(u => u.Department)
+        .WithMany() // Lưu ý: Để trống (WithMany()) vì bên Department không có List Members
+        .HasForeignKey(u => u.DepartmentId)
+        .OnDelete(DeleteBehavior.SetNull);
         builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
     }
 }

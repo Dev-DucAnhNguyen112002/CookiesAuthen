@@ -30,6 +30,9 @@ namespace CookiesAuthen.Infrastructure.Data.Migrations
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    FullName = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Address = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    DateOfBirth = table.Column<DateTime>(type: "datetime2", nullable: true),
                     UserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     Email = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
@@ -51,7 +54,7 @@ namespace CookiesAuthen.Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "TodoLists",
+                name: "TodoList",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
@@ -65,7 +68,7 @@ namespace CookiesAuthen.Infrastructure.Data.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_TodoLists", x => x.Id);
+                    table.PrimaryKey("PK_TodoList", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -175,7 +178,7 @@ namespace CookiesAuthen.Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "TodoItems",
+                name: "TodoItem",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
@@ -193,11 +196,11 @@ namespace CookiesAuthen.Infrastructure.Data.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_TodoItems", x => x.Id);
+                    table.PrimaryKey("PK_TodoItem", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_TodoItems_TodoLists_ListId",
+                        name: "FK_TodoItem_TodoList_ListId",
                         column: x => x.ListId,
-                        principalTable: "TodoLists",
+                        principalTable: "TodoList",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -242,8 +245,8 @@ namespace CookiesAuthen.Infrastructure.Data.Migrations
                 filter: "[NormalizedUserName] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
-                name: "IX_TodoItems_ListId",
-                table: "TodoItems",
+                name: "IX_TodoItem_ListId",
+                table: "TodoItem",
                 column: "ListId");
         }
 
@@ -266,7 +269,7 @@ namespace CookiesAuthen.Infrastructure.Data.Migrations
                 name: "AspNetUserTokens");
 
             migrationBuilder.DropTable(
-                name: "TodoItems");
+                name: "TodoItem");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");
@@ -275,7 +278,7 @@ namespace CookiesAuthen.Infrastructure.Data.Migrations
                 name: "AspNetUsers");
 
             migrationBuilder.DropTable(
-                name: "TodoLists");
+                name: "TodoList");
         }
     }
 }

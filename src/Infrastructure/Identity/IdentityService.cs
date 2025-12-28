@@ -1,5 +1,7 @@
+using System.Security.Claims;
 using CookiesAuthen.Application.Common.Interfaces;
 using CookiesAuthen.Application.Common.Models;
+using CookiesAuthen.Application.Feature.v1.Departments.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -11,11 +13,11 @@ public class IdentityService : IIdentityService
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IUserClaimsPrincipalFactory<ApplicationUser> _userClaimsPrincipalFactory;
     private readonly IAuthorizationService _authorizationService;
-
     public IdentityService(
         UserManager<ApplicationUser> userManager,
         IUserClaimsPrincipalFactory<ApplicationUser> userClaimsPrincipalFactory,
-        IAuthorizationService authorizationService)
+        IAuthorizationService authorizationService,
+        RoleManager<IdentityRole> roleManager)
     {
         _userManager = userManager;
         _userClaimsPrincipalFactory = userClaimsPrincipalFactory;
@@ -78,4 +80,37 @@ public class IdentityService : IIdentityService
 
         return result.ToApplicationResult();
     }
+    public async Task<List<DepartmentMemberDto>> GetUsersByDepartmentAsync(int departmentId)
+    {
+        // Đây là nơi duy nhất được phép đụng vào ApplicationUser
+        var users = await _userManager.Users
+            .Where(u => u.DepartmentId == departmentId)
+            .Select(u => new DepartmentMemberDto
+            {
+                Id = u.Id,
+                FullName = u.FullName ?? u.UserName, // Nếu ko có tên thật thì lấy username
+                Email = u.Email!,
+                // Logic lấy Role hơi phức tạp xíu, tạm thời để string cứng hoặc join bảng
+                Role = u.IsHeadOfDepartment ? "Trưởng phòng" : "Nhân viên"
+            })
+            .ToListAsync();
+
+        return users;
+    }
+    public async Task<bool> UpdateUserDepartmentAsync(string userId, int departmentId, bool isHead)
+    {
+        // 1. Tìm user theo Id
+        var user = await _userManager.FindByIdAsync(userId);
+        // Nếu không thấy user -> Trả về false
+        if (user == null) return false;
+
+        // 2. Cập nhật thông tin
+        user.DepartmentId = departmentId;
+        user.IsHeadOfDepartment = isHead;
+
+        // 3. Lưu xuống Database
+        var result = await _userManager.UpdateAsync(user);
+        return result.Succeeded;
+    }
+    
 }

@@ -1,4 +1,7 @@
-﻿# CookiesAuthen
+﻿
+dotnet ef migrations add InitialCreate -o Data/Migrations --project src/Infrastructure --startup-project src/Web
+dotnet ef database update --project src/Infrastructure --startup-project src/Web
+# CookiesAuthen
 
 The project was generated using the [Clean.Architecture.Solution.Template](https://github.com/jasontaylordev/CleanArchitecture) version 9.0.8.
 

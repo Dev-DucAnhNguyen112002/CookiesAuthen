@@ -10,7 +10,9 @@ public class WeatherForecasts : EndpointGroupBase
         app.MapGroup(this)
             .RequireAuthorization()
             .MapGet(GetWeatherForecasts)
-            .MapGet("/get",GetWeatherForecastsV2);
+            .MapGet(CreateForecastsV2)
+            .MapGet(DeleteForecastsV3);
+
     }
 
     public async Task<Ok<IEnumerable<WeatherForecast>>> GetWeatherForecasts(ISender sender)
@@ -19,7 +21,13 @@ public class WeatherForecasts : EndpointGroupBase
         
         return TypedResults.Ok(forecasts);
     }
-    public async Task<Ok<IEnumerable<WeatherForecast>>> GetWeatherForecastsV2(ISender sender)
+    public async Task<Ok<IEnumerable<WeatherForecast>>> CreateForecastsV2(ISender sender)
+    {
+        var forecasts = await sender.Send(new GetWeatherForecastsQuery());
+
+        return TypedResults.Ok(forecasts);
+    }
+    public async Task<Ok<IEnumerable<WeatherForecast>>> DeleteForecastsV3(ISender sender)
     {
         var forecasts = await sender.Send(new GetWeatherForecastsQuery());
 
