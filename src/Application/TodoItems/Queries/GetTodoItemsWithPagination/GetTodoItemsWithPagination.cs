@@ -1,6 +1,7 @@
 ﻿using CookiesAuthen.Application.Common.Interfaces;
 using CookiesAuthen.Application.Common.Mappings;
 using CookiesAuthen.Application.Common.Models;
+using CookiesAuthen.Domain.Entities;
 
 namespace CookiesAuthen.Application.TodoItems.Queries.GetTodoItemsWithPagination;
 
@@ -24,7 +25,7 @@ public class GetTodoItemsWithPaginationQueryHandler : IRequestHandler<GetTodoIte
 
     public async Task<PaginatedList<TodoItemBriefDto>> Handle(GetTodoItemsWithPaginationQuery request, CancellationToken cancellationToken)
     {
-        return await _context.TodoItems
+        return await _context.Set<TodoItem>()
             .Where(x => x.ListId == request.ListId)
             .OrderBy(x => x.Title)
             .ProjectTo<TodoItemBriefDto>(_mapper.ConfigurationProvider)

@@ -1,4 +1,5 @@
 ﻿using CookiesAuthen.Application.Common.Interfaces;
+using CookiesAuthen.Domain.Entities;
 
 namespace CookiesAuthen.Application.TodoLists.Commands.UpdateTodoList;
 
@@ -20,7 +21,7 @@ public class UpdateTodoListCommandValidator : AbstractValidator<UpdateTodoListCo
 
     public async Task<bool> BeUniqueTitle(UpdateTodoListCommand model, string title, CancellationToken cancellationToken)
     {
-        return !await _context.TodoLists
+        return !await _context.Set<TodoList>()
             .Where(l => l.Id != model.Id)
             .AnyAsync(l => l.Title == title, cancellationToken);
     }

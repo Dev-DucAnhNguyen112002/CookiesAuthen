@@ -1,4 +1,5 @@
 ﻿using CookiesAuthen.Application.Common.Interfaces;
+using CookiesAuthen.Domain.Entities;
 
 namespace CookiesAuthen.Application.TodoLists.Commands.UpdateTodoList;
 
@@ -20,7 +21,7 @@ public class UpdateTodoListCommandHandler : IRequestHandler<UpdateTodoListComman
 
     public async Task Handle(UpdateTodoListCommand request, CancellationToken cancellationToken)
     {
-        var entity = await _context.TodoLists
+        var entity = await _context.Set<TodoList>()
             .FindAsync(new object[] { request.Id }, cancellationToken);
 
         Guard.Against.NotFound(request.Id, entity);

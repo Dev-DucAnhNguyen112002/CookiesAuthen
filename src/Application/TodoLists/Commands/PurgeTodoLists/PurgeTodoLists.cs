@@ -1,6 +1,7 @@
 ﻿using CookiesAuthen.Application.Common.Interfaces;
 using CookiesAuthen.Application.Common.Security;
 using CookiesAuthen.Domain.Constants;
+using CookiesAuthen.Domain.Entities;
 
 namespace CookiesAuthen.Application.TodoLists.Commands.PurgeTodoLists;
 
@@ -19,7 +20,7 @@ public class PurgeTodoListsCommandHandler : IRequestHandler<PurgeTodoListsComman
 
     public async Task Handle(PurgeTodoListsCommand request, CancellationToken cancellationToken)
     {
-        _context.TodoLists.RemoveRange(_context.TodoLists);
+        _context.Set<TodoList>().RemoveRange(_context.Set<TodoList>());
 
         await _context.SaveChangesAsync(cancellationToken);
     }

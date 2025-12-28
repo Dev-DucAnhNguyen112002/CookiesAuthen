@@ -745,12 +745,65 @@
         ]
       }
     },
+    "/api/Users/2fa_setup": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "GetApiUsers2faSetup",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TwoFactorResponse2"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/WeatherForecasts": {
       "get": {
         "tags": [
           "WeatherForecasts"
         ],
         "operationId": "GetWeatherForecasts",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WeatherForecast"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/WeatherForecasts/get": {
+      "get": {
+        "tags": [
+          "WeatherForecasts"
+        ],
+        "operationId": "GetApiWeatherForecastsGet",
         "responses": {
           "200": {
             "description": "",
@@ -1224,6 +1277,20 @@
             "nullable": true
           },
           "oldPassword": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "TwoFactorResponse2": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "sharedKey": {
+            "type": "string",
+            "nullable": true
+          },
+          "qrCodeUri": {
             "type": "string",
             "nullable": true
           }

@@ -9,13 +9,20 @@ public class WeatherForecasts : EndpointGroupBase
     {
         app.MapGroup(this)
             .RequireAuthorization()
-            .MapGet(GetWeatherForecasts);
+            .MapGet(GetWeatherForecasts)
+            .MapGet("/get",GetWeatherForecastsV2);
     }
 
     public async Task<Ok<IEnumerable<WeatherForecast>>> GetWeatherForecasts(ISender sender)
     {
         var forecasts = await sender.Send(new GetWeatherForecastsQuery());
         
+        return TypedResults.Ok(forecasts);
+    }
+    public async Task<Ok<IEnumerable<WeatherForecast>>> GetWeatherForecastsV2(ISender sender)
+    {
+        var forecasts = await sender.Send(new GetWeatherForecastsQuery());
+
         return TypedResults.Ok(forecasts);
     }
 }

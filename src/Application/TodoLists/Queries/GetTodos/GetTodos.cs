@@ -1,6 +1,7 @@
 ﻿using CookiesAuthen.Application.Common.Interfaces;
 using CookiesAuthen.Application.Common.Models;
 using CookiesAuthen.Application.Common.Security;
+using CookiesAuthen.Domain.Entities;
 using CookiesAuthen.Domain.Enums;
 
 namespace CookiesAuthen.Application.TodoLists.Queries.GetTodos;
@@ -28,7 +29,7 @@ public class GetTodosQueryHandler : IRequestHandler<GetTodosQuery, TodosVm>
                 .Select(p => new LookupDto { Id = (int)p, Title = p.ToString() })
                 .ToList(),
 
-            Lists = await _context.TodoLists
+            Lists = await _context.Set<TodoList>()
                 .AsNoTracking()
                 .ProjectTo<TodoListDto>(_mapper.ConfigurationProvider)
                 .OrderBy(t => t.Title)

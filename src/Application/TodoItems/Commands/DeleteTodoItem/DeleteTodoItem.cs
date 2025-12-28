@@ -1,4 +1,5 @@
 ﻿using CookiesAuthen.Application.Common.Interfaces;
+using CookiesAuthen.Domain.Entities;
 using CookiesAuthen.Domain.Events;
 
 namespace CookiesAuthen.Application.TodoItems.Commands.DeleteTodoItem;
@@ -16,12 +17,11 @@ public class DeleteTodoItemCommandHandler : IRequestHandler<DeleteTodoItemComman
 
     public async Task Handle(DeleteTodoItemCommand request, CancellationToken cancellationToken)
     {
-        var entity = await _context.TodoItems
-            .FindAsync(new object[] { request.Id }, cancellationToken);
+        var entity = await _context.Set<TodoItem>().FindAsync(new object[] { request.Id }, cancellationToken);
 
         Guard.Against.NotFound(request.Id, entity);
 
-        _context.TodoItems.Remove(entity);
+        _context.Set<TodoItem>().Remove(entity);
 
         entity.AddDomainEvent(new TodoItemDeletedEvent(entity));
 
