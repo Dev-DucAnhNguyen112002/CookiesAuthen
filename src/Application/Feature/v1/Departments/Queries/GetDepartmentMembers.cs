@@ -21,8 +21,6 @@ public class GetDepartmentMembersQueryHandler : IRequestHandler<GetDepartmentMem
 
     public async Task<List<DepartmentMemberDto>> Handle(GetDepartmentMembersQuery request, CancellationToken cancellationToken)
     {
-        // Gọi service lấy dữ liệu
-        // Tầng Application không hề biết Database hay Identity là cái gì
         var members = await _identityService.GetUsersByDepartmentAsync(request.DepartmentId);
 
         return members;

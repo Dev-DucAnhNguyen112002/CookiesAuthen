@@ -2,6 +2,7 @@ using System.Security.Claims;
 using CookiesAuthen.Application.Common.Interfaces;
 using CookiesAuthen.Application.Common.Models;
 using CookiesAuthen.Application.Feature.v1.Departments.Models;
+using CookiesAuthen.Application.Feature.v1.System.Queries;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -13,15 +14,20 @@ public class IdentityService : IIdentityService
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IUserClaimsPrincipalFactory<ApplicationUser> _userClaimsPrincipalFactory;
     private readonly IAuthorizationService _authorizationService;
+    private readonly RoleManager<IdentityRole> _roleManager;
+    private readonly IApplicationDbContext _context;
     public IdentityService(
         UserManager<ApplicationUser> userManager,
         IUserClaimsPrincipalFactory<ApplicationUser> userClaimsPrincipalFactory,
         IAuthorizationService authorizationService,
-        RoleManager<IdentityRole> roleManager)
+        RoleManager<IdentityRole> roleManager,
+        IApplicationDbContext context)
     {
         _userManager = userManager;
         _userClaimsPrincipalFactory = userClaimsPrincipalFactory;
         _authorizationService = authorizationService;
+        _roleManager = roleManager;
+        _context = context;
     }
 
     public async Task<string?> GetUserNameAsync(string userId)
@@ -88,9 +94,8 @@ public class IdentityService : IIdentityService
             .Select(u => new DepartmentMemberDto
             {
                 Id = u.Id,
-                FullName = u.FullName ?? u.UserName, // Nếu ko có tên thật thì lấy username
+                FullName = u.FullName ?? u.UserName, 
                 Email = u.Email!,
-                // Logic lấy Role hơi phức tạp xíu, tạm thời để string cứng hoặc join bảng
                 Role = u.IsHeadOfDepartment ? "Trưởng phòng" : "Nhân viên"
             })
             .ToListAsync();
@@ -99,18 +104,83 @@ public class IdentityService : IIdentityService
     }
     public async Task<bool> UpdateUserDepartmentAsync(string userId, int departmentId, bool isHead)
     {
-        // 1. Tìm user theo Id
         var user = await _userManager.FindByIdAsync(userId);
-        // Nếu không thấy user -> Trả về false
         if (user == null) return false;
-
-        // 2. Cập nhật thông tin
         user.DepartmentId = departmentId;
         user.IsHeadOfDepartment = isHead;
-
-        // 3. Lưu xuống Database
         var result = await _userManager.UpdateAsync(user);
         return result.Succeeded;
+    }
+    public async Task<PaginatedList<RoleDto>> GetRolesWithPermissionsAsync(int pageNumber, int pageSize, string? keyword)
+    {
+        var query = _roleManager.Roles.AsNoTracking();
+
+        if (!string.IsNullOrEmpty(keyword))
+            query = query.Where(r => r.Name!.Contains(keyword));
+
+        var totalCount = await query.CountAsync();
+        var items = await query
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .Select(r => new RoleDto(
+                r.Id,
+                r.Name!,
+                _context.Set<IdentityRoleClaim<string>>()
+                    .Where(rc => rc.RoleId == r.Id && rc.ClaimType == "Permission")
+                    .Select(rc => rc.ClaimValue!)
+                    .ToList()
+            ))
+            .ToListAsync(); // Gửi 1 câu SQL duy nhất
+
+        return new PaginatedList<RoleDto>(items, totalCount, pageNumber, pageSize);
+    }
+    public async Task<PaginatedList<UserWithPermissionsDto>> GetUsersWithPermissionsAsync(int pageNumber, int pageSize, string? keyword)
+    {
+        var query = _userManager.Users.AsNoTracking();
+
+        if (!string.IsNullOrEmpty(keyword))
+        {
+            query = query.Where(u => u.UserName!.Contains(keyword) || u.Email!.Contains(keyword));
+        }
+
+        var totalCount = await query.CountAsync();
+
+        // Lấy các tập hợp thực thể thông qua phương thức Set<T>()
+        var userRoles = _context.Set<IdentityUserRole<string>>();
+        var roles = _context.Set<IdentityRole>();
+        var roleClaims = _context.Set<IdentityRoleClaim<string>>();
+
+        var items = await query
+            .OrderBy(u => u.UserName)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .Select(user => new UserWithPermissionsDto
+            {
+                Id = user.Id,
+                UserName = user.UserName!,
+                Email = user.Email!,
+                Roles = userRoles
+                    .Where(ur => ur.UserId == user.Id)
+                    .Join(roles, ur => ur.RoleId, r => r.Id, (ur, r) => r.Name!)
+                    .ToList(),
+                Permissions = userRoles
+                    .Where(ur => ur.UserId == user.Id)
+                    .Join(roleClaims, ur => ur.RoleId, rc => rc.RoleId, (ur, rc) => rc)
+                    .Where(rc => rc.ClaimType == "Permission")
+                    .Select(rc => rc.ClaimValue!)
+                    .Distinct()
+                    .ToList()
+            })
+            .ToListAsync();
+
+        return new PaginatedList<UserWithPermissionsDto>(items, totalCount, pageNumber, pageSize);
+    }
+    public async Task<IList<string>> GetUserRolesAsync(string userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null) return new List<string>();
+
+        return await _userManager.GetRolesAsync(user);
     }
     
 }

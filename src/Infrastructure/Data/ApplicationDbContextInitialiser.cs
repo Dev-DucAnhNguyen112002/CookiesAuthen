@@ -1,4 +1,5 @@
 ﻿using System.Security.Claims;
+using CookiesAuthen.Application.Common.Security;
 using CookiesAuthen.Domain.Constants;
 using CookiesAuthen.Domain.Entities;
 using CookiesAuthen.Infrastructure.Identity;
@@ -67,73 +68,109 @@ public class ApplicationDbContextInitialiser
 
     public async Task TrySeedAsync()
     {
-        // 1. Tạo Phòng ban (Nếu chưa có)
-        if (!_context.Set<Department>().Any())
+        // ==============================================================================
+        // 1. TẠO ROLES (CÁC PHÒNG BAN)
+        // ==============================================================================
+        await EnsureRoleAsync("Administrator");
+        await EnsureRoleAsync("IT");
+        await EnsureRoleAsync("SALE");
+        await EnsureRoleAsync("HR");
+        await EnsureRoleAsync("Director");
+        await EnsureRoleAsync("HeadOfDepartment");
+        // ==============================================================================
+        // 2. PHÂN QUYỀN (DÙNG ENUM)
+        // ==============================================================================
+
+        // --- PHÒNG IT: Chỉ được quyền XEM Weather ---
+        await GrantPermissionEnumAsync("IT", ResourceType.WeatherForecast, PermissionAction.View);
+
+        // --- PHÒNG SALE: Được TẠO và IMPORT Weather ---
+        await GrantPermissionEnumAsync("SALE", ResourceType.WeatherForecast, PermissionAction.Create);
+        await GrantPermissionEnumAsync("SALE", ResourceType.WeatherForecast, PermissionAction.Import); // (Ví dụ mở rộng)
+
+        // --- PHÒNG HR: Được XÓA Weather ---
+        await GrantPermissionEnumAsync("HR", ResourceType.WeatherForecast, PermissionAction.Delete);
+
+        // --- ADMINISTRATOR: FULL QUYỀN (Tự động lặp qua tất cả Enum để cấp hết) ---
+        await GrantFullAccessToRoleAsync("Administrator");
+
+        // ==============================================================================
+        // 3. TẠO USER MẪU (SEEDING USERS)
+        // ==============================================================================
+
+        // Admin
+        await EnsureUserAsync("admin@localhost", "Administrator1!", "Administrator");
+
+        // Nhân viên IT
+        await EnsureUserAsync("it@localhost", "Password123!", "IT");
+
+        // Nhân viên Sale
+        await EnsureUserAsync("sale@localhost", "Password123!", "SALE");
+
+        // Nhân viên HR
+        await EnsureUserAsync("hr@localhost", "Password123!", "HR");
+
+    }
+    private async Task EnsureRoleAsync(string roleName)
+    {
+        if (_roleManager.Roles.All(r => r.Name != roleName))
         {
-            _context.Set<Department>().AddRange(new List<Department>
-        {
-            new Department { Name = "Phòng IT", Code = "IT" },
-            new Department { Name = "Phòng Nhân Sự", Code = "HR" },
-            new Department { Name = "Phòng Kinh Doanh", Code = "SALE" }
-        });
-            await _context.SaveChangesAsync();
+            await _roleManager.CreateAsync(new IdentityRole(roleName));
         }
+    }
 
-        // Lấy Id phòng ra để gán
-        var itDept = await _context.Set<Department>().FirstAsync(d => d.Code == "IT");
-        var hrDept = await _context.Set<Department>().FirstAsync(d => d.Code == "HR");
-
-        // 2. Tạo User Giám Đốc (Trùm cuối)
-        var directorEmail = "giamdoc@company.com";
-        if (_userManager.Users.All(u => u.UserName != directorEmail))
+    private async Task EnsureUserAsync(string email, string password, string roleName)
+    {
+        if (_userManager.Users.All(u => u.UserName != email))
         {
-            var director = new ApplicationUser
+            var user = new ApplicationUser
             {
-                UserName = directorEmail,
-                Email = directorEmail,
-                FullName = "Nguyễn Văn Giám Đốc",
-                IsDirector = true // <--- QUAN TRỌNG
+                UserName = email,
+                Email = email,
+                EmailConfirmed = true
+                // Có thể set thêm DepartmentId nếu muốn test logic Department Owner
             };
-            await _userManager.CreateAsync(director, "Password123!");
-            await _userManager.AddToRoleAsync(director, "Administrator"); // Cho full quyền chức năng
-        }
 
-        // 3. Tạo Trưởng phòng IT
-        var tpItEmail = "tpit@company.com";
-        if (_userManager.Users.All(u => u.UserName != tpItEmail))
+            await _userManager.CreateAsync(user, password);
+            await _userManager.AddToRoleAsync(user, roleName);
+        }
+    }
+
+    // Hàm quan trọng: Chuyển đổi Enum -> String Claim và lưu vào DB
+    private async Task GrantPermissionEnumAsync(string roleName, ResourceType resource, PermissionAction action)
+    {
+        var role = await _roleManager.FindByNameAsync(roleName);
+        if (role == null) return;
+
+        // Tạo chuỗi claim chuẩn: "Permissions.WeatherForecast.View"
+        string permissionString = $"Permissions.{resource}.{action}";
+
+        var allClaims = await _roleManager.GetClaimsAsync(role);
+
+        // Kiểm tra xem có chưa, chưa có mới thêm
+        if (!allClaims.Any(a => a.Type == "Permission" && a.Value == permissionString))
         {
-            var tpIt = new ApplicationUser
-            {
-                UserName = tpItEmail,
-                Email = tpItEmail,
-                FullName = "Trần Trưởng Phòng IT",
-                DepartmentId = itDept.Id, // Thuộc phòng IT
-                IsHeadOfDepartment = true // <--- Là sếp
-            };
-            await _userManager.CreateAsync(tpIt, "Password123!");
-            // Gán claim CRUD cơ bản
-            await _userManager.AddClaimAsync(tpIt, new Claim("Permission", "Permissions.Weather.Create"));
-            await _userManager.AddClaimAsync(tpIt, new Claim("Permission", "Permissions.Weather.Delete"));
+            await _roleManager.AddClaimAsync(role, new Claim("Permission", permissionString));
         }
+    }
 
-        // 4. Tạo Nhân viên IT (Lính)
-        var nvItEmail = "nvit@company.com";
-        if (_userManager.Users.All(u => u.UserName != nvItEmail))
+    // Hàm cấp Full quyền cho Admin (Duyệt qua tất cả Resource và Action)
+    private async Task GrantFullAccessToRoleAsync(string roleName)
+    {
+        // Duyệt qua từng Resource (Weather, Product, User...)
+        foreach (ResourceType resource in Enum.GetValues(typeof(ResourceType)))
         {
-            var nvIt = new ApplicationUser
+            // Duyệt qua từng Action (View, Create, Delete...)
+            foreach (PermissionAction action in Enum.GetValues(typeof(PermissionAction)))
             {
-                UserName = nvItEmail,
-                Email = nvItEmail,
-                FullName = "Lê Nhân Viên IT",
-                DepartmentId = itDept.Id, // Thuộc phòng IT
-                IsHeadOfDepartment = false // <--- Là lính
-            };
-            await _userManager.CreateAsync(nvIt, "Password123!");
-            // Chỉ cho quyền Xem và Tạo (Không cho Xóa)
-            await _userManager.AddClaimAsync(nvIt, new Claim("Permission", "Permissions.Weather.Create"));
-            // Lưu ý: Không add claim Delete cho ông này
+                // Bỏ qua các giá trị cờ gộp hoặc None để tránh rác DB
+                if (action != PermissionAction.None &&
+                    action != PermissionAction.FullAccess &&
+                    action != PermissionAction.ViewEdit)
+                {
+                    await GrantPermissionEnumAsync(roleName, resource, action);
+                }
+            }
         }
-
-        // ... Tương tự tạo cho phòng HR để test chéo ...
     }
 }

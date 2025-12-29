@@ -1,13 +1,17 @@
 ﻿using CookiesAuthen.Application.Common.Interfaces;
+using CookiesAuthen.Application.Common.Interfaces.Repository;
+using CookiesAuthen.Application.Common.Security;
 using CookiesAuthen.Domain.Constants;
 using CookiesAuthen.Infrastructure.Data;
 using CookiesAuthen.Infrastructure.Data.Interceptors;
+using CookiesAuthen.Infrastructure.Data.Persistence.Repositories;
 using CookiesAuthen.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -44,9 +48,12 @@ public static class DependencyInjection
             .AddApiEndpoints();
 
         builder.Services.AddSingleton(TimeProvider.System);
+        builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
         builder.Services.AddTransient<IIdentityService, IdentityService>();
         builder.Services.AddTransient<IPermissionService, PermissionService>();
-        builder.Services.AddAuthorization(options =>
-            options.AddPolicy(Policies.CanPurge, policy => policy.RequireRole(Roles.Administrator)));
+        builder.Services.AddAuthorization(options => {
+            options.AddPolicy(Policies.CanPurge, policy => policy.RequireRole(Roles.Administrator));
+           
+        });
     }
 }

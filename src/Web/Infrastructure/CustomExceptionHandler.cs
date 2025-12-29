@@ -1,7 +1,7 @@
 ﻿using CookiesAuthen.Application.Common.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
-
+using FluentValidationException = FluentValidation.ValidationException;
 namespace CookiesAuthen.Web.Infrastructure;
 
 public class CustomExceptionHandler : IExceptionHandler
@@ -14,6 +14,7 @@ public class CustomExceptionHandler : IExceptionHandler
         _exceptionHandlers = new()
             {
                 { typeof(ValidationException), HandleValidationException },
+                { typeof(FluentValidationException), HandleFluentValidationException },
                 { typeof(NotFoundException), HandleNotFoundException },
                 { typeof(UnauthorizedAccessException), HandleUnauthorizedAccessException },
                 { typeof(ForbiddenAccessException), HandleForbiddenAccessException },
@@ -33,18 +34,18 @@ public class CustomExceptionHandler : IExceptionHandler
         return false;
     }
 
-    private async Task HandleValidationException(HttpContext httpContext, Exception ex)
-    {
-        var exception = (ValidationException)ex;
+    //private async Task HandleValidationException(HttpContext httpContext, Exception ex)
+    //{
+    //    var exception = (ValidationException)ex;
 
-        httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
+    //    httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
 
-        await httpContext.Response.WriteAsJsonAsync(new ValidationProblemDetails(exception.Errors)
-        {
-            Status = StatusCodes.Status400BadRequest,
-            Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1"
-        });
-    }
+    //    await httpContext.Response.WriteAsJsonAsync(new ValidationProblemDetails(exception.Errors)
+    //    {
+    //        Status = StatusCodes.Status400BadRequest,
+    //        Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1"
+    //    });
+    //}
 
     private async Task HandleNotFoundException(HttpContext httpContext, Exception ex)
     {
@@ -82,6 +83,54 @@ public class CustomExceptionHandler : IExceptionHandler
             Status = StatusCodes.Status403Forbidden,
             Title = "Forbidden",
             Type = "https://tools.ietf.org/html/rfc7231#section-6.5.3"
+        });
+    }
+    // 1. Xử lý lỗi từ FluentValidation (Thư viện)
+    private async Task HandleFluentValidationException(HttpContext httpContext, Exception ex)
+    {
+        var exception = (FluentValidation.ValidationException)ex;
+        httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
+
+        // Chuyển đổi lỗi từ Fluent sang Dictionary
+        var errors = exception.Errors
+            .GroupBy(e => e.PropertyName, e => e.ErrorMessage)
+            .ToDictionary(failure => failure.Key, failure => failure.ToArray());
+
+        // FIX NULL & EMPTY: Nếu không có lỗi chi tiết, lấy Message làm lỗi chung
+        if (!errors.Any() && !string.IsNullOrWhiteSpace(exception.Message))
+        {
+            errors.Add("Error", new[] { exception.Message });
+        }
+
+        // errors ở đây chắc chắn không null vì được khởi tạo từ Linq hoặc Dictionary mới
+        await httpContext.Response.WriteAsJsonAsync(new ValidationProblemDetails(errors)
+        {
+            Status = StatusCodes.Status400BadRequest,
+            Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+            Title = "Validation Error"
+        });
+    }
+
+    // 2. Xử lý lỗi từ Application Validation (Của bạn)
+    private async Task HandleValidationException(HttpContext httpContext, Exception ex)
+    {
+        var exception = (ValidationException)ex;
+        httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
+        IDictionary<string, string[]> errors = exception.Errors ?? new Dictionary<string, string[]>();
+        // Logic fallback: Nếu danh sách rỗng, lấy Message chung
+        if (!errors.Any() && !string.IsNullOrWhiteSpace(exception.Message))
+        {
+            // Phải khởi tạo lại Dictionary mới để add được (tránh lỗi Array cố định)
+            errors = new Dictionary<string, string[]>
+            {
+                { "Error", new[] { exception.Message } }
+            };
+        }
+
+        await httpContext.Response.WriteAsJsonAsync(new ValidationProblemDetails(errors)
+        {
+            Status = StatusCodes.Status400BadRequest,
+            Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1"
         });
     }
 }

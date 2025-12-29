@@ -6,6 +6,238 @@
     "version": "1.0.0"
   },
   "paths": {
+    "/api/System/grant-permission": {
+      "post": {
+        "tags": [
+          "System"
+        ],
+        "operationId": "GrantPermission",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GrantPermissionCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": [
+              "Administrator",
+              "Director",
+              "HeadOfDepartment"
+            ]
+          }
+        ]
+      }
+    },
+    "/api/System/revoke-permission": {
+      "post": {
+        "tags": [
+          "System"
+        ],
+        "operationId": "RevokePermission",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevokePermissionCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": [
+              "Administrator",
+              "Director",
+              "HeadOfDepartment"
+            ]
+          }
+        ]
+      }
+    },
+    "/api/System/assign-role": {
+      "post": {
+        "tags": [
+          "System"
+        ],
+        "operationId": "AssignRole",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignUserRoleCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": [
+              "Administrator",
+              "Director",
+              "HeadOfDepartment"
+            ]
+          }
+        ]
+      }
+    },
+    "/api/System/DepartmentMembers": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "operationId": "GetDepartmentMembers",
+        "parameters": [
+          {
+            "name": "DepartmentId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": [
+              "Administrator",
+              "Director",
+              "HeadOfDepartment"
+            ]
+          }
+        ]
+      }
+    },
+    "/api/System/role/{roleName}": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "operationId": "GetApiSystemRole",
+        "parameters": [
+          {
+            "name": "roleName",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/System/user": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "operationId": "GetApiSystemUser",
+        "parameters": [
+          {
+            "name": "PageNumber",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 2
+          },
+          {
+            "name": "Keyword",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 3
+          },
+          {
+            "name": "SortBy",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 4
+          },
+          {
+            "name": "IsDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "nullable": true
+            },
+            "x-position": 5
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/TodoItems": {
       "get": {
         "tags": [
@@ -770,34 +1002,6 @@
         ]
       }
     },
-    "/api/WeatherForecasts": {
-      "get": {
-        "tags": [
-          "WeatherForecasts"
-        ],
-        "operationId": "GetWeatherForecasts",
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/WeatherForecast"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
     "/api/WeatherForecasts/get": {
       "get": {
         "tags": [
@@ -825,10 +1029,163 @@
           }
         ]
       }
+    },
+    "/api/WeatherForecasts/create": {
+      "post": {
+        "tags": [
+          "WeatherForecasts"
+        ],
+        "operationId": "PostApiWeatherForecastsCreate",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WeatherForecast"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/WeatherForecasts/delete/{id}": {
+      "delete": {
+        "tags": [
+          "WeatherForecasts"
+        ],
+        "operationId": "DeleteApiWeatherForecastsDelete",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WeatherForecast"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
     }
   },
   "components": {
     "schemas": {
+      "GrantPermissionCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "roleName": {
+            "type": "string"
+          },
+          "resource": {
+            "$ref": "#/components/schemas/ResourceType"
+          },
+          "action": {
+            "$ref": "#/components/schemas/PermissionAction"
+          }
+        }
+      },
+      "ResourceType": {
+        "type": "integer",
+        "description": "",
+        "x-enumNames": [
+          "WeatherForecast",
+          "Users",
+          "System",
+          "Products",
+          "Departments"
+        ],
+        "enum": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "PermissionAction": {
+        "type": "integer",
+        "description": "",
+        "x-enumFlags": true,
+        "x-enumNames": [
+          "None",
+          "View",
+          "Create",
+          "Update",
+          "ViewEdit",
+          "Delete",
+          "Import",
+          "FullAccess"
+        ],
+        "enum": [
+          0,
+          1,
+          2,
+          4,
+          5,
+          8,
+          16,
+          31
+        ]
+      },
+      "RevokePermissionCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "roleName": {
+            "type": "string"
+          },
+          "resource": {
+            "$ref": "#/components/schemas/ResourceType"
+          },
+          "action": {
+            "$ref": "#/components/schemas/PermissionAction"
+          }
+        }
+      },
+      "AssignUserRoleCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "roleName": {
+            "type": "string"
+          }
+        }
+      },
       "PaginatedListOfTodoItemBriefDto": {
         "type": "object",
         "additionalProperties": false,
