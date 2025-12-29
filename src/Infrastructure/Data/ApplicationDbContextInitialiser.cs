@@ -1,8 +1,7 @@
 ﻿using System.Security.Claims;
 using CookiesAuthen.Application.Common.Security;
-using CookiesAuthen.Domain.Constants;
 using CookiesAuthen.Domain.Entities;
-using CookiesAuthen.Infrastructure.Identity;
+using CookiesAuthen.Domain.Entities.Identity;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -30,9 +29,9 @@ public class ApplicationDbContextInitialiser
     private readonly ILogger<ApplicationDbContextInitialiser> _logger;
     private readonly ApplicationDbContext _context;
     private readonly UserManager<ApplicationUser> _userManager;
-    private readonly RoleManager<IdentityRole> _roleManager;
+    private readonly RoleManager<ApplicationRole> _roleManager;
 
-    public ApplicationDbContextInitialiser(ILogger<ApplicationDbContextInitialiser> logger, ApplicationDbContext context, UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager)
+    public ApplicationDbContextInitialiser(ILogger<ApplicationDbContextInitialiser> logger, ApplicationDbContext context, UserManager<ApplicationUser> userManager, RoleManager<ApplicationRole> roleManager)
     {
         _logger = logger;
         _context = context;
@@ -68,67 +67,65 @@ public class ApplicationDbContextInitialiser
 
     public async Task TrySeedAsync()
     {
-        // ==============================================================================
-        // 1. TẠO ROLES (CÁC PHÒNG BAN)
-        // ==============================================================================
+        // 1. Khởi tạo Roles
         await EnsureRoleAsync("Administrator");
         await EnsureRoleAsync("IT");
         await EnsureRoleAsync("SALE");
         await EnsureRoleAsync("HR");
         await EnsureRoleAsync("Director");
         await EnsureRoleAsync("HeadOfDepartment");
-        // ==============================================================================
-        // 2. PHÂN QUYỀN (DÙNG ENUM)
-        // ==============================================================================
 
-        // --- PHÒNG IT: Chỉ được quyền XEM Weather ---
+        // 2. Khởi tạo Departments (Phòng ban) mẫu
+        if (!_context.Set<Department>().Any())
+        {
+            _context.Set<Department>().AddRange(
+                new Department { Name = "Ban Giám Đốc", Code = "BGD", IsActive = true },
+                new Department { Name = "Phòng CNTT", Code = "IT", IsActive = true },
+                new Department { Name = "Phòng Kinh Doanh", Code = "SALE", IsActive = true },
+                new Department { Name = "Phòng Nhân Sự", Code = "HR", IsActive = true }
+            );
+            await _context.SaveChangesAsync();
+        }
+
+        // 3. Phân quyền cho các Role
         await GrantPermissionEnumAsync("IT", ResourceType.WeatherForecast, PermissionAction.View);
-
-        // --- PHÒNG SALE: Được TẠO và IMPORT Weather ---
         await GrantPermissionEnumAsync("SALE", ResourceType.WeatherForecast, PermissionAction.Create);
-        await GrantPermissionEnumAsync("SALE", ResourceType.WeatherForecast, PermissionAction.Import); // (Ví dụ mở rộng)
-
-        // --- PHÒNG HR: Được XÓA Weather ---
         await GrantPermissionEnumAsync("HR", ResourceType.WeatherForecast, PermissionAction.Delete);
 
-        // --- ADMINISTRATOR: FULL QUYỀN (Tự động lặp qua tất cả Enum để cấp hết) ---
+        // Cấp full quyền cho Admin và Director
         await GrantFullAccessToRoleAsync("Administrator");
+        await GrantFullAccessToRoleAsync("Director");
 
-        // ==============================================================================
-        // 3. TẠO USER MẪU (SEEDING USERS)
-        // ==============================================================================
+        var itDept = _context.Set<Department>().FirstOrDefault(d => d.Code == "IT");
+        var bgdDept = _context.Set<Department>().FirstOrDefault(d => d.Code == "BGD");
 
-        // Admin
-        await EnsureUserAsync("admin@localhost", "Administrator1!", "Administrator");
-
-        // Nhân viên IT
-        await EnsureUserAsync("it@localhost", "Password123!", "IT");
-
-        // Nhân viên Sale
-        await EnsureUserAsync("sale@localhost", "Password123!", "SALE");
-
-        // Nhân viên HR
-        await EnsureUserAsync("hr@localhost", "Password123!", "HR");
-
+        await EnsureUserAsync("admin@localhost", "Administrator1!", "Administrator", bgdDept?.Id);
+        await EnsureUserAsync("director@localhost", "Director1!", "Director", bgdDept?.Id);
+        await EnsureUserAsync("it@localhost", "Password123!", "IT", itDept?.Id);
     }
     private async Task EnsureRoleAsync(string roleName)
     {
         if (_roleManager.Roles.All(r => r.Name != roleName))
         {
-            await _roleManager.CreateAsync(new IdentityRole(roleName));
+            // Sử dụng {} thay vì ()
+            await _roleManager.CreateAsync(new ApplicationRole { Name = roleName });
         }
     }
 
-    private async Task EnsureUserAsync(string email, string password, string roleName)
+    private async Task EnsureUserAsync(string email, string password, string roleName, Guid? departmentId = null)
     {
-        if (_userManager.Users.All(u => u.UserName != email))
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user == null)
         {
-            var user = new ApplicationUser
+            user = new ApplicationUser
             {
                 UserName = email,
                 Email = email,
-                EmailConfirmed = true
-                // Có thể set thêm DepartmentId nếu muốn test logic Department Owner
+                EmailConfirmed = true,
+                DepartmentId = departmentId,
+                // Tự động set flag dựa trên role
+                IsDirector = roleName == "Director" || roleName == "Administrator",
+                IsHeadOfDepartment = roleName == "HeadOfDepartment"
             };
 
             await _userManager.CreateAsync(user, password);

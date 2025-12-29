@@ -2,6 +2,7 @@
 using CookiesAuthen.Application.Common.Interfaces.Repository;
 using CookiesAuthen.Application.Common.Security;
 using CookiesAuthen.Domain.Constants;
+using CookiesAuthen.Domain.Entities.Identity;
 using CookiesAuthen.Infrastructure.Data;
 using CookiesAuthen.Infrastructure.Data.Interceptors;
 using CookiesAuthen.Infrastructure.Data.Persistence.Repositories;
@@ -41,12 +42,15 @@ public static class DependencyInjection
 
         builder.Services.AddAuthorizationBuilder();
 
-        builder.Services
-            .AddIdentityCore<ApplicationUser>()
-            .AddRoles<IdentityRole>()
+        //builder.Services
+        //    .AddIdentityCore<ApplicationUser>()
+        //    .AddRoles<IdentityRole>()
+        //    .AddEntityFrameworkStores<ApplicationDbContext>()
+        //    .AddApiEndpoints();
+        builder.Services.AddIdentity<ApplicationUser, ApplicationRole>() 
             .AddEntityFrameworkStores<ApplicationDbContext>()
+            .AddDefaultTokenProviders()
             .AddApiEndpoints();
-
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
         builder.Services.AddTransient<IIdentityService, IdentityService>();

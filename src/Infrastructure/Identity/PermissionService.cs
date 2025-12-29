@@ -1,16 +1,17 @@
-﻿using CookiesAuthen.Application.Common.Interfaces;
+﻿using System.Security.Claims;
+using CookiesAuthen.Application.Common.Interfaces;
 using CookiesAuthen.Application.Common.Models;
+using CookiesAuthen.Domain.Entities.Identity;
 using Microsoft.AspNetCore.Identity;
-using System.Security.Claims;
 
 namespace CookiesAuthen.Infrastructure.Identity;
 
 public class PermissionService : IPermissionService
 {
-    private readonly RoleManager<IdentityRole> _roleManager;
+    private readonly RoleManager<ApplicationRole> _roleManager;
     private readonly UserManager<ApplicationUser> _userManager;
 
-    public PermissionService(RoleManager<IdentityRole> roleManager, UserManager<ApplicationUser> userManager)
+    public PermissionService(RoleManager<ApplicationRole> roleManager, UserManager<ApplicationUser> userManager)
     {
         _roleManager = roleManager;
         _userManager = userManager;

@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Authorization; // Thêm dòng này để dùng AuthorizeAttribute chuẩn
 using CookiesAuthen.Application.Common.Interfaces;
 using CookiesAuthen.Application.Feature.v1.System.Queries;
-using CookiesAuthen.Application.Feature.v1.Departments.Queries;
 
 public class System : EndpointGroupBase
 {
@@ -19,8 +18,7 @@ public class System : EndpointGroupBase
             })
             .MapPost(GrantPermission, "/grant-permission")
             .MapPost(RevokePermission, "/revoke-permission")
-            .MapPost(AssignRole, "/assign-role")
-            .MapGet(GetDepartmentMembers, "DepartmentMembers");
+            .MapPost(AssignRole, "/assign-role");
         var group = app.MapGroup(this).RequireAuthorization();
 
         // Xem quyền của Role: /api/permissions/role/SALE
@@ -56,11 +54,6 @@ public class System : EndpointGroupBase
     public async Task<IResult> GetUserPermissions([AsParameters] GetUsersWithPermissionsQuery query, ISender sender)
     {
         // Tận dụng Query phân trang đã viết để lấy danh sách User kèm quyền
-        var result = await sender.Send(query);
-        return TypedResults.Ok(result);
-    }
-    public async Task<IResult> GetDepartmentMembers([AsParameters] GetDepartmentMembersQuery query, ISender sender)
-    {
         var result = await sender.Send(query);
         return TypedResults.Ok(result);
     }
