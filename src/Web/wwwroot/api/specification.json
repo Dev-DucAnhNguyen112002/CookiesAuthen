@@ -681,12 +681,12 @@
         ]
       }
     },
-    "/api/WeatherForecasts/create": {
+    "/api/WeatherForecasts/createWeather": {
       "post": {
         "tags": [
           "WeatherForecasts"
         ],
-        "operationId": "PostApiWeatherForecastsCreate",
+        "operationId": "PostApiWeatherForecastsCreateWeather",
         "responses": {
           "200": {
             "description": "",
