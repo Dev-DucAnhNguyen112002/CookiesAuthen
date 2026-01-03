@@ -10,9 +10,4 @@ services:
       - "5000:8080"   # Map cổng 5000 máy ngoài vào 8080 trong container
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-    volumes:
-      # 👇 CHIÊU THỨC CÔNG TY: Map file cấu hình từ ngoài vào trong
-      # Giả sử file appsettings nằm trong thư mục src/Web (cần kiểm tra đúng đường dẫn nhé)
-      # Nếu file json nằm ngay cạnh docker-compose thì sửa thành ./appsettings.Development.json
-      - ./src/Web/appsettings.Development.json:/app/appsettings.Development.json
     restart: unless-stopped
