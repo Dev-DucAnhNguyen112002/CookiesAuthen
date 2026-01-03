@@ -10,5 +10,4 @@ services:
       - "5000:8080"   # Map cổng 5000 máy ngoài vào 8080 trong container
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=http://+:8080
     restart: unless-stopped
