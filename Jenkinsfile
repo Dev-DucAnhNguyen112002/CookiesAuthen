@@ -5,7 +5,7 @@ pipeline {
         BOT_TOKEN = credentials('TELEGRAM_TOKEN')
         CHAT_ID   = credentials('TELEGRAM_CHAT_ID')
         // Biến này để Docker Compose đọc
-        ASPNETCORE_ENVIRONMENT = "Testing" 
+        ASPNETCORE_ENVIRONMENT = "Development" 
     }
 
     stages {
