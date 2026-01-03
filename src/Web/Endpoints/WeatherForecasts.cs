@@ -14,7 +14,7 @@ public class WeatherForecasts : EndpointGroupBase
         group.MapGet("get",GetWeatherForecasts)
              .RequirePermission(ResourceType.WeatherForecast, PermissionAction.View);
 
-        group.MapPost("/create",CreateForecastsV2)
+        group.MapPost("/createWeather",CreateForecastsV2)
              .RequirePermission(ResourceType.WeatherForecast, PermissionAction.Create);
 
         group.MapDelete("/delete/{id}", DeleteForecastsV3) // Thêm {id} cho đúng chuẩn REST

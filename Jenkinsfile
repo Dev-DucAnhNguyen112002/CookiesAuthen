@@ -25,7 +25,7 @@ pipeline {
             steps {
                 script {
                     // Build image mới
-                    sh "docker build -t ${IMAGE_NAME} ."
+                    sh "docker compose up -d --build"
                 }
             }
         }
@@ -42,7 +42,7 @@ pipeline {
                     sh """
                         docker run -d -p 5000:8080 \
                         --name ${CONTAINER_NAME} \
-                        -e ASPNETCORE_ENVIRONMENT=Docker \
+                        -e ASPNETCORE_ENVIRONMENT=Testing \
                         ${IMAGE_NAME}
                     """
                 }
