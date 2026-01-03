@@ -1,86 +1,109 @@
 pipeline {
     agent any
-    
-    // Lấy bí mật từ Jenkins ra để dùng
+
+    // 1. Định nghĩa các biến môi trường
     environment {
-        // Tên biến = credentials('ID-ban-da-tao')
-        BOT_TOKEN = credentials('TELEGRAM_TOKEN')
-        CHAT_ID   = credentials('TELEGRAM_CHAT_ID')
+        // Tên ảnh và container
+        IMAGE_NAME = 'cookies-authen-app'
+        CONTAINER_NAME = 'my-web-app'
         
-        // Cấu hình tên Container và Image
-        IMAGE_NAME = "cookies-authen-app"
-        CONTAINER_NAME = "my-web-app"
+        // Cấu hình Telegram (Lấy từ Credentials như bài trước mình chỉ)
+        BOT_TOKEN = credentials('TELEGRAM_TOKEN')
+        CHAT_ID = credentials('TELEGRAM_CHAT_ID')
+    }
+
+    options {
+        // Giới hạn thời gian chạy 10 phút thôi cho đỡ treo máy
+        timeout(time: 10, unit: 'MINUTES')
+        // Không cho chạy 2 job cùng lúc
+        disableConcurrentBuilds()
     }
 
     stages {
-        stage('♻️ Checkout Code') {
-            steps {
-                // Bước này Jenkins tự làm khi kết nối Git, nhưng viết ra cho rõ
-                checkout scm
-                echo 'Đã kéo code mới nhất về!'
-            }
-        }
-
-        stage('🔨 Build Docker Image') {
+        stage('🛠️ Check Environment') {
             steps {
                 script {
-                    // Build image mới
-                    sh "docker build -t ${IMAGE_NAME} ."
+                    echo "🚀 Building Branch: ${env.BRANCH_NAME}"
+                    // Kiểm tra Docker có sống không
+                    sh 'docker --version || { echo "❌ Docker chưa cài!"; exit 1; }'
                 }
             }
         }
 
-        stage('🚀 Deploy to Container') {
+        // Bước Clone Code: Jenkins tự làm nếu bạn cấu hình Git trong Job rồi.
+        // Nếu dùng Jenkinsfile trong Git thì nó tự checkout luôn, không cần stage Clone.
+
+        stage('🐳 Build Docker Image') {
             steps {
+                echo 'Building Docker image...'
+                // Build ảnh, gắn tag là số lần build (BUILD_NUMBER)
+                sh "docker build -t ${IMAGE_NAME}:${env.BUILD_NUMBER} -t ${IMAGE_NAME}:latest ."
+            }
+        }
+
+        stage('🚀 Deploy to Local') {
+            steps {
+                echo 'Deploying to Localhost...'
                 script {
-                    // Dùng lệnh || true để không lỗi nếu container chưa tồn tại
+                    // Stop & Remove container cũ
                     sh "docker stop ${CONTAINER_NAME} || true"
                     sh "docker rm ${CONTAINER_NAME} || true"
-                    
-                    // Chạy Container mới (Dùng config file Docker đã tạo ở bài trước)
-                    // Lưu ý: Mình dùng IP 192.168.1.225 như bạn đã test thành công
+
+                    // Chạy container mới (Dùng lệnh IP LAN của bạn)
                     sh """
                         docker run -d -p 5000:8080 \
                         --name ${CONTAINER_NAME} \
                         -e ASPNETCORE_ENVIRONMENT=Docker \
-                        ${IMAGE_NAME}
+                        ${IMAGE_NAME}:latest
                     """
                 }
             }
         }
     }
 
-    // Phần quan trọng: Thông báo sau khi chạy xong
     post {
         always {
-            // Dọn dẹp rác image
-            sh 'docker image prune -f'
+            echo '🧹 Cleaning up...'
+            // Xóa ảnh rác để đỡ tốn ổ cứng laptop
+            sh "docker image prune -f"
         }
+
         success {
             script {
                 def message = "✅ <b>DEPLOY SUCCESS!</b>%0A" +
-                              "📦 Project: ${env.JOB_NAME}%0A" +
+                              "📦 Job: ${env.JOB_NAME}%0A" +
                               "🔢 Build: #${env.BUILD_NUMBER}%0A" +
+                              "🌿 Branch: ${env.BRANCH_NAME}%0A" +
                               "------------------------------%0A" +
-                              "🎉 Server đã lên sóng. Check ngay!"
+                              "Server đã lên sóng!"
                 sendTelegram(message)
             }
         }
+
         failure {
             script {
+                // Lấy link log để bấm vào xem cho nhanh
+                def logLink = "${env.JENKINS_URL}job/${env.JOB_NAME}/${env.BUILD_NUMBER}/console"
                 def message = "❌ <b>DEPLOY FAILED!</b>%0A" +
-                              "📦 Project: ${env.JOB_NAME}%0A" +
+                              "📦 Job: ${env.JOB_NAME}%0A" +
                               "🔢 Build: #${env.BUILD_NUMBER}%0A" +
-                              "------------------------------%0A" +
-                              "⚠️ Mau vào kiểm tra Log gấp!"
+                              "🔗 <a href='${logLink}'>Xem Log chi tiết</a>"
                 sendTelegram(message)
             }
         }
     }
 }
 
-// Hàm gửi tin nhắn (Viết riêng cho gọn)
-def sendTelegram(message) {
-    // Dùng lệnh curl có sẵn trong Linux để gọi API Telegram
-    sh "curl -s -X POST https://api.telegram.org/bot${BOT_TOKEN}/sendMessage -d chat_id=${CHAT_ID} -d parse_mode=HTML -d text=\"${message}\""
+// Hàm gửi Telegram (Mình viết gọn lại cho dễ nhìn)
+def sendTelegram(msg) {
+    if (env.BOT_TOKEN && env.CHAT_ID) {
+        sh """
+            curl -s -X POST https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage \
+            -d chat_id=${env.CHAT_ID} \
+            -d parse_mode=HTML \
+            -d text=\"${msg}\"
+        """
+    } else {
+        echo "⚠️ Không tìm thấy Token Telegram, bỏ qua gửi tin nhắn."
+    }
 }
