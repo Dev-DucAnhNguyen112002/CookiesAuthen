@@ -23,9 +23,8 @@ pipeline {
         stage('🛠️ Check Environment') {
             steps {
                 script {
-                    echo "🚀 Building Branch: ${env.BRANCH_NAME}"
-                    // Kiểm tra Docker có sống không
-                    sh 'docker --version || { echo "❌ Docker chưa cài!"; exit 1; }'
+                    // Build image mới
+                    sh "docker compose up -d --build"
                 }
             }
         }
@@ -53,8 +52,8 @@ pipeline {
                     sh """
                         docker run -d -p 5000:8080 \
                         --name ${CONTAINER_NAME} \
-                        -e ASPNETCORE_ENVIRONMENT=Docker \
-                        ${IMAGE_NAME}:latest
+                        -e ASPNETCORE_ENVIRONMENT=Testing \
+                        ${IMAGE_NAME}
                     """
                 }
             }
