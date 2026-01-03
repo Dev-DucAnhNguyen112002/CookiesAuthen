@@ -1,0 +1,8 @@
+# .dockerignore
+**/.dockerignore
+**/.env
+**/.git
+**/.vs
+**/bin
+**/obj
+**/TestResults
