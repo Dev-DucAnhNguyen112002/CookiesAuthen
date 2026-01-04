@@ -653,6 +653,29 @@
         ]
       }
     },
+    "/api/Users/GetListUser": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "GetListUser",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/WeatherForecasts/get": {
       "get": {
         "tags": [
@@ -1098,6 +1121,21 @@
           "qrCodeUri": {
             "type": "string",
             "nullable": true
+          }
+        }
+      },
+      "UserDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
           }
         }
       },

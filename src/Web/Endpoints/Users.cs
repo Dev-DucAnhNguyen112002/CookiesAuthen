@@ -1,5 +1,7 @@
 ﻿using System.Security.Claims;
 using System.Text.Encodings.Web;
+using CookiesAuthen.Application.Feature.v1.Users.Models;
+using CookiesAuthen.Application.Feature.v1.Users.Queries;
 using CookiesAuthen.Domain.Entities.Identity;
 using CookiesAuthen.Infrastructure.Identity;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -17,6 +19,7 @@ public class Users : EndpointGroupBase
         app.MapGroup(this)
             .RequireAuthorization() // Bắt buộc đăng nhập
             .MapGet("/2fa_setup", GetTwoFactorSetup);
+        app.MapGroup(this).AllowAnonymous().MapGet(GetListUser,"/GetListUser");
     }
 
     public async Task<Ok<TwoFactorResponse>> GetTwoFactorSetup(
@@ -47,6 +50,11 @@ public class Users : EndpointGroupBase
 
         // Dùng TypedResults.Ok
         return TypedResults.Ok(new TwoFactorResponse{ SharedKey = key, QrCodeUri = authenticatorUri });
+    }
+    public async Task<List<UserDto>> GetListUser([FromServices] ISender sender,[AsParameters] GetUsersQuery request)
+    {
+        var result = await sender.Send(request);
+        return result;
     }
 }
 public record TwoFactorResponse

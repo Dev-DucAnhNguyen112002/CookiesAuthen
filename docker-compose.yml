@@ -20,3 +20,13 @@ services:
     restart: unless-stopped
     networks:
       - default # Để chung network thì App mới gọi được
+  redis-insight:
+    image: redis/redisinsight:latest
+    container_name: redis-insight
+    ports:
+      - "5540:5540"
+    restart: unless-stopped
+    volumes:
+      - redis_insight_data:/data
+    networks:
+      - default # Để chung mạng với service redis
