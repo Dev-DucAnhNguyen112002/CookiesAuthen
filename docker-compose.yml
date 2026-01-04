@@ -12,3 +12,11 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__CookiesAuthenDb=Server=192.168.1.225,1433;Database=MyLearningDB;User Id=sa;Password=123456aA@;TrustServerCertificate=True;MultipleActiveResultSets=true
     #restart: unless-stopped
+  redis:
+    image: redis:alpine
+    container_name: redis-cache
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    networks:
+      - default # Để chung network thì App mới gọi được

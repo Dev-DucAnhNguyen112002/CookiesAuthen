@@ -1,8 +1,8 @@
 ﻿using CookiesAuthen.Application.Common.Interfaces;
 using CookiesAuthen.Application.Common.Interfaces.Repository;
-using CookiesAuthen.Application.Common.Security;
 using CookiesAuthen.Domain.Constants;
 using CookiesAuthen.Domain.Entities.Identity;
+using CookiesAuthen.Infrastructure.Caching;
 using CookiesAuthen.Infrastructure.Data;
 using CookiesAuthen.Infrastructure.Data.Interceptors;
 using CookiesAuthen.Infrastructure.Data.Persistence.Repositories;
@@ -12,8 +12,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Options;
-
 namespace Microsoft.Extensions.DependencyInjection;
 
 public static class DependencyInjection
@@ -59,5 +57,24 @@ public static class DependencyInjection
             options.AddPolicy(Policies.CanPurge, policy => policy.RequireRole(Roles.Administrator));
            
         });
+
+        builder.Services.addRedisCaching(builder.Configuration);
+    }
+    public static IServiceCollection addRedisCaching(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddStackExchangeRedisCache(options =>
+        {
+            // Lấy chuỗi kết nối từ biến configuration được truyền vào
+            var redisConnection = configuration.GetConnectionString("RedisConnection");
+
+            // Kiểm tra null cho chắc chắn (Best practice)
+            Guard.Against.Null(redisConnection, message: "Connection string 'RedisConnection' not found.");
+            options.Configuration = redisConnection;
+            options.InstanceName = "CookiesApp_";
+        });
+
+        services.AddScoped<ICacheService, RedisCacheService>();
+
+        return services; // Hợp lệ vì kiểu trả về là IServiceCollection
     }
 }
