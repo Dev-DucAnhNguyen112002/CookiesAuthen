@@ -31,6 +31,19 @@ services:
       - redis_insight_data:/data
     networks:
       - default # Để chung mạng với service redis
-
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"   # Cổng để Code .NET kết nối
+      - "15672:15672" # Cổng để vào Web quản lý (Giao diện)
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - default 
 volumes:
   redis_insight_data:
+  rabbitmq_data:
