@@ -7,6 +7,7 @@ using CookiesAuthen.Application.Common.Interfaces;
 using CookiesAuthen.Domain.Entities;
 
 namespace CookiesAuthen.Application.Feature.v1.Departments.Commands;
+
 public record CreateDepartmentCommand : IRequest<Guid>
 {
     public string Name { get; init; } = default!;
@@ -19,7 +20,6 @@ public record CreateDepartmentCommand : IRequest<Guid>
 public class CreateDepartmentCommandHandler : IRequestHandler<CreateDepartmentCommand, Guid>
 {
     private readonly IApplicationDbContext _context;
-
     public CreateDepartmentCommandHandler(IApplicationDbContext context)
     {
         _context = context;

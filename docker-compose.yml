@@ -12,6 +12,10 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__CookiesAuthenDb=Server=192.168.1.225,1433;Database=MyLearningDB;User Id=sa;Password=123456aA@;TrustServerCertificate=True;MultipleActiveResultSets=true
       - ConnectionStrings__RedisConnection=redis:6379
+      - MessageBroker__Host=rabbitmq
+    depends_on:     
+      - redis
+      - rabbitmq
     #restart: unless-stopped
   redis:
     image: redis:alpine

@@ -64,8 +64,10 @@ public static class DependencyInjection
         builder.Services.AddMassTransit(x =>
         {
             // 1. Đăng ký Consumer (Người nhận)
-            x.AddConsumer<UserCreatedConsumer>();
-
+            // Lệnh này bảo MassTransit: "Hãy vào cái dự án chứa class UserCreatedConsumer 
+                // và lôi tất cả các Consumer khác ra đây cho tao."
+            var assembly = typeof(UserCreatedConsumer).Assembly;
+            x.AddConsumers(assembly);
             // 2. Cấu hình kết nối RabbitMQ
             x.UsingRabbitMq((context, cfg) =>
             {

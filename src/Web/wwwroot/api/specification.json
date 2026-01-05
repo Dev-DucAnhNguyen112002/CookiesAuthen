@@ -6,6 +6,16 @@
     "version": "1.0.0"
   },
   "paths": {
+    "/api/test-queue": {
+      "post": {
+        "operationId": "PostApiTestQueue",
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/v1/departments": {
       "post": {
         "tags": [
