@@ -7,6 +7,8 @@ using CookiesAuthen.Infrastructure.Data;
 using CookiesAuthen.Infrastructure.Data.Interceptors;
 using CookiesAuthen.Infrastructure.Data.Persistence.Repositories;
 using CookiesAuthen.Infrastructure.Identity;
+using CookiesAuthen.Infrastructure.Services.Messaging;
+using MassTransit;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -59,6 +61,26 @@ public static class DependencyInjection
         });
 
         builder.Services.addRedisCaching(builder.Configuration);
+        builder.Services.AddMassTransit(x =>
+        {
+            // 1. Đăng ký Consumer (Người nhận)
+            x.AddConsumer<UserCreatedConsumer>();
+
+            // 2. Cấu hình kết nối RabbitMQ
+            x.UsingRabbitMq((context, cfg) =>
+            {
+                // Lưu ý: Chạy Docker thì host là "rabbitmq", chạy Local thì là "localhost"
+                // Tạm thời mình lấy từ config, hoặc hardcode test trước
+                var rabbitHost = builder.Configuration["MessageBroker:Host"] ?? "localhost";
+
+                cfg.Host(rabbitHost, "/", h => {
+                    h.Username("guest");
+                    h.Password("guest");
+                });
+
+                cfg.ConfigureEndpoints(context); // Tự động tạo Queue theo tên Consumer
+            });
+        });
     }
     public static IServiceCollection addRedisCaching(this IServiceCollection services, IConfiguration configuration)
     {

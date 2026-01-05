@@ -1,9 +1,11 @@
 ﻿using System.Security.Claims;
 using System.Text.Encodings.Web;
+using CookiesAuthen.Application.Common.Messages;
 using CookiesAuthen.Application.Feature.v1.Users.Models;
 using CookiesAuthen.Application.Feature.v1.Users.Queries;
 using CookiesAuthen.Domain.Entities.Identity;
 using CookiesAuthen.Infrastructure.Identity;
+using MassTransit;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -20,6 +22,17 @@ public class Users : EndpointGroupBase
             .RequireAuthorization() // Bắt buộc đăng nhập
             .MapGet("/2fa_setup", GetTwoFactorSetup);
         app.MapGroup(this).AllowAnonymous().MapGet(GetListUser,"/GetListUser");
+        app.MapPost("/api/test-queue", async (IPublishEndpoint publishEndpoint) =>
+        {
+            // IPublishEndpoint là service của MassTransit dùng để BẮN tin
+            await publishEndpoint.Publish(new UserCreatedEvent
+            {
+                UserId = Guid.NewGuid().ToString(),
+                Email = "test@gmail.com"
+            });
+
+            return Results.Ok("Đã bắn tin nhắn vào hàng đợi! Check log đi!");
+        }).AllowAnonymous();
     }
 
     public async Task<Ok<TwoFactorResponse>> GetTwoFactorSetup(

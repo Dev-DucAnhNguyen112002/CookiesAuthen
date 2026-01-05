@@ -1,7 +1,9 @@
-﻿using CookiesAuthen.Application.Common.Security;
+﻿using CookiesAuthen.Application.Common.Messages;
+using CookiesAuthen.Application.Common.Security;
 using CookiesAuthen.Application.WeatherForecasts.Queries.GetWeatherForecasts;
-using Microsoft.AspNetCore.Http.HttpResults;
 using CookiesAuthen.Web.Extensions;
+using MassTransit;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace CookiesAuthen.Web.Endpoints;
 
@@ -19,6 +21,7 @@ public class WeatherForecasts : EndpointGroupBase
 
         group.MapDelete("/delete/{id}", DeleteForecastsV3) // Thêm {id} cho đúng chuẩn REST
              .RequirePermission(ResourceType.WeatherForecast, PermissionAction.Delete);
+        
     }
 
     public async Task<Ok<IEnumerable<WeatherForecast>>> GetWeatherForecasts(ISender sender)
