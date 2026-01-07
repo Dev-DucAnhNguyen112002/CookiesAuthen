@@ -1,11 +1,12 @@
 pipeline {
-    agent any
+    agent { label 'docker' }
 
     environment {
         BOT_TOKEN = credentials('TELEGRAM_TOKEN')
         CHAT_ID   = credentials('TELEGRAM_CHAT_ID')
         // Biến này để Docker Compose đọc
         ASPNETCORE_ENVIRONMENT = "Development" 
+        APP_VERSION = "${TAG_NAME ?: "${BRANCH_NAME}.${BUILD_NUMBER}"}"
     }
 
     stages {
@@ -17,12 +18,20 @@ pipeline {
         }
 
         stage('🚀 Build & Deploy (Docker Compose)') {
+	    when {
+                anyOf {
+                    branch 'main'
+                    buildingTag()
+                }
+            }
             steps {
                 script {
-                    echo 'Đang Build và Deploy bằng Docker Compose...'
+                    echo "Deploying version: ${APP_VERSION}"
                     // Lệnh DUY NHẤT bạn cần. 
                     // Nó tự Build -> Tự Stop cũ -> Tự Run mới -> Tự Map port
-                    sh "docker compose up -d --build"
+                    //sh "docker compose up -d --build"
+                    sh "docker compose build"
+                    sh "docker compose up -d"
                 }
             }
         }
@@ -32,16 +41,17 @@ pipeline {
 
     post {
         always {
-            sh 'docker image prune -f' 
+	    cleanWs()
+            sh 'docker image prune -f --filter "until=48h"' 
         }
         success {
             script {
-                sendTelegram("✅ <b>DEPLOY SUCCESS!</b>%0AApp đã chạy ngon lành trên cổng 5000!")
+                sendTelegram("✅ <b>DEPLOY SUCCESS</b>%0AVersion: <b>${APP_VERSION}</b>")
             }
         }
         failure {
             script {
-                sendTelegram("❌ <b>DEPLOY FAILED!</b>%0AKiểm tra lại ngay!")
+                sendTelegram("❌ <b>DEPLOY FAILED</b>%0AVersion: ${APP_VERSION}")
             }
         }
     }
